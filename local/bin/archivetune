@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# ArchiveTune launcher — Android app running through Waydroid.
+# Starts the Waydroid session first if it is not up yet, then opens the app window.
+set -u
+
+APP="moe.rukamori.archivetune"
+
+session_running() {
+    waydroid status 2>/dev/null | grep -qE '^Session:[[:space:]]*RUNNING'
+}
+
+if ! session_running; then
+    setsid waydroid session start >/dev/null 2>&1 < /dev/null &
+    for _ in $(seq 1 60); do
+        sleep 1
+        session_running && break
+    done
+fi
+
+if ! session_running; then
+    echo "ArchiveTune: Waydroid session did not start (is waydroid-container.service running?)" >&2
+    exit 1
+fi
+
+exec waydroid app launch "$APP"

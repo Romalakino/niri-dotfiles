@@ -1,0 +1,170 @@
+#!/usr/bin/env python3
+"""Сгенерировать конфиг локального прокси ruh-local-proxy из активного узла ruh-vpn.
+
+Берёт активный сервер из servers.json (по activeServerId в settings.json)
+и пишет sing-box-конфиг с mixed-инбаундом только на loopback.
+Системный прокси (gsettings) не трогается: приложения подключаются сами.
+"""
+
+import json
+import os
+import pathlib
+import sys
+
+STATE = pathlib.Path.home() / ".local/state/noctalia/plugins/data/vlad-dev/ruh-vpn"
+CONFIG = pathlib.Path.home() / ".config/ruh-local-proxy/config.json"
+LISTEN_PORT = int(os.environ.get("RUH_LOCAL_PORT", "11085"))
+
+# Roblox отдаёт превью и ассеты с CDN *.rbxcdn.com, а с датацентровых адресов
+# VPN эти запросы рвутся по TLS. Домены и сети Roblox (AS22697) идут напрямую.
+ROBLOX_DOMAINS = [
+    "roblox.com",
+    "robloxlabs.com",
+    "roblox.cn",
+    "rbxcdn.com",
+    "rbxtrk.com",
+    "rbx.com",
+]
+ROBLOX_NETWORKS = [
+    "128.116.0.0/17",
+    "103.140.28.0/23",
+    "141.193.3.0/24",
+    "205.201.62.0/24",
+]
+# Системный резолвер на этом роутере отдаёт для rbxcdn только CNAME без A-записи,
+# поэтому Roblox-домены резолвятся напрямую через 9.9.9.9.
+DIRECT_DNS = "9.9.9.9"
+
+
+def load_json(path):
+    with open(path, encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def pick_server(servers, active_id):
+    items = servers if isinstance(servers, list) else servers.get("servers", [])
+    for srv in items:
+        if srv.get("id") == active_id:
+            return srv
+    return items[0] if items else None
+
+
+def build_outbound(srv):
+    out = {
+        "type": "vless",
+        "tag": "proxy",
+        "server": srv["address"],
+        "server_port": int(srv["port"]),
+        "uuid": srv["uuid"],
+    }
+    if srv.get("flow"):
+        out["flow"] = srv["flow"]
+    if srv.get("security") == "reality":
+        tls = {
+            "enabled": True,
+            "server_name": srv.get("sni", ""),
+            "utls": {"enabled": True, "fingerprint": srv.get("fp", "chrome")},
+            "reality": {
+                "enabled": True,
+                "public_key": srv.get("pbk", ""),
+                "short_id": srv.get("sid", ""),
+            },
+        }
+    elif srv.get("tls") or srv.get("security") == "tls":
+        tls = {"enabled": True, "server_name": srv.get("sni", "")}
+        if srv.get("fp"):
+            tls["utls"] = {"enabled": True, "fingerprint": srv["fp"]}
+    else:
+        tls = {"enabled": False}
+    out["tls"] = tls
+    if srv.get("transport") not in (None, "", "tcp"):
+        out["transport"] = {"type": srv["transport"]}
+    return out
+
+
+def main():
+    try:
+        servers = load_json(STATE / "servers.json")
+        settings = load_json(STATE / "settings.json")
+        srv = pick_server(servers, settings.get("activeServerId"))
+        if not srv:
+            raise ValueError("в servers.json нет ни одного сервера")
+    except (OSError, ValueError) as exc:
+        # Плагин мог быть отключён или ещё не создал состояние. Лучше оставить
+        # прошлый рабочий конфиг, чем уронить прокси и оставить Telegram без связи.
+        if CONFIG.exists():
+            print(f"ruh-local-sync: {exc}; оставляю прошлый конфиг", file=sys.stderr)
+            return
+        sys.exit(f"ruh-local-sync: {exc}")
+
+    config = {
+        "log": {"level": "warn", "timestamp": True},
+        "dns": {
+            "servers": [
+                # Системный резолвер: им резолвится адрес самого прокси-сервера.
+                # Если пустить это через proxy-dns, получится цикл.
+                {
+                    "type": "local",
+                    "tag": "system-dns",
+                },
+                # Общий DNS для приложений — через туннель (detour=proxy), чтобы
+                # резолв не светился наружу.
+                {
+                    "type": "udp",
+                    "tag": "proxy-dns",
+                    "server": DIRECT_DNS,
+                    "server_port": 53,
+                    "detour": "proxy",
+                },
+                # Roblox-домены резолвятся локально на прямом DNS: системный
+                # резолвер не отдаёт A-записи для *.rbxcdn.com (только CNAME),
+                # и через прокси их тоже нельзя резолвить (иначе CDN идёт через
+                # туннель и TLS рвётся).
+                {
+                    "type": "udp",
+                    "tag": "roblox-dns",
+                    "server": DIRECT_DNS,
+                    "server_port": 53,
+                },
+            ],
+            "rules": [
+                {"domain_suffix": ROBLOX_DOMAINS, "server": "roblox-dns"},
+            ],
+            "final": "proxy-dns",
+            "strategy": "ipv4_only",
+        },
+        "inbounds": [
+            {
+                "type": "mixed",
+                "tag": "mixed-in",
+                "listen": "127.0.0.1",
+                "listen_port": LISTEN_PORT,
+            }
+        ],
+        "outbounds": [
+            build_outbound(srv),
+            {"type": "direct", "tag": "direct"},
+        ],
+        "route": {
+            "rules": [
+                {"action": "sniff"},
+                {"domain_suffix": ROBLOX_DOMAINS, "outbound": "direct"},
+                {"ip_cidr": ROBLOX_NETWORKS, "outbound": "direct"},
+            ],
+            "final": "proxy",
+            "default_domain_resolver": "system-dns",
+        },
+    }
+
+    CONFIG.parent.mkdir(parents=True, exist_ok=True)
+    text = json.dumps(config, ensure_ascii=False, indent=2)
+    if not CONFIG.exists() or CONFIG.read_text(encoding="utf-8") != text:
+        tmp = CONFIG.with_suffix(".tmp")
+        tmp.write_text(text, encoding="utf-8")
+        os.chmod(tmp, 0o600)
+        tmp.replace(CONFIG)
+    print(f"ruh-local-sync: {srv.get('name')} ({srv['address']}:{srv['port']}) -> 127.0.0.1:{LISTEN_PORT}")
+
+
+if __name__ == "__main__":
+    main()

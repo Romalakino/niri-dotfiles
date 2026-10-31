@@ -1,0 +1,11 @@
+#!/bin/sh
+# Riff через туннель ruh-vpn: www.youtube.com и music.youtube.com
+# напрямую из РФ не отвечают (таймаут), через 127.0.0.1:11085 — 200 OK.
+# Electron-приложение своего прокси не имеет, поэтому задаём и окружение,
+# и Chromium-переключатель, которым пользуется модуль net.request.
+export HTTPS_PROXY=http://127.0.0.1:11085
+export HTTP_PROXY=http://127.0.0.1:11085
+exec /home/vlad/.local/opt/riff/riff.AppImage \
+    --no-sandbox \
+    --proxy-server=http://127.0.0.1:11085 \
+    "$@"

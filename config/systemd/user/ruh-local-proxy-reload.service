@@ -1,0 +1,7 @@
+[Unit]
+Description=Пересобрать конфиг ruh-local-proxy под активный узел и перезапустить его
+
+[Service]
+Type=oneshot
+ExecStart=/home/vlad/.local/bin/ruh-local-sync
+ExecStart=/usr/bin/systemctl --user restart ruh-local-proxy.service

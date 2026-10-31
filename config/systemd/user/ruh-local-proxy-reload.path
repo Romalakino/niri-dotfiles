@@ -1,0 +1,8 @@
+[Unit]
+Description=Следить за сменой активного узла ruh-vpn
+
+[Path]
+PathModified=%h/.local/state/noctalia/plugins/data/vlad-dev/ruh-vpn/settings.json
+
+[Install]
+WantedBy=default.target

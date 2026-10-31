@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Freebuff
+Exec=/home/vlad/Applications/freebuff-run %U
+Terminal=false
+Type=Application
+Icon=freebuff
+StartupWMClass=Freebuff
+Comment=Freebuff Desktop
+MimeType=x-scheme-handler/freebuff;
+Categories=Development;

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Riff
+Comment=Музыкальный плеер: YouTube Music, SoundCloud и локальные файлы
+Exec=/home/vlad/.local/bin/riff-vpn %U
+Terminal=false
+Type=Application
+Icon=riff
+StartupWMClass=Riff
+Categories=AudioVideo;Audio;Player;
+Keywords=music;audio;player;youtube;soundcloud;

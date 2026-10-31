@@ -1,0 +1,16 @@
+[Unit]
+Description=ruh-vpn local proxy on 127.0.0.1:11085 (per-app, no system proxy)
+Documentation=file:/home/vlad/.local/bin/ruh-local-sync
+After=network-online.target
+
+[Service]
+Type=simple
+# Конфиг пересобирается из активного узла ruh-vpn при каждом старте.
+ExecStartPre=/home/vlad/.local/bin/ruh-local-sync
+ExecStart=/usr/bin/sing-box run -c %h/.config/ruh-local-proxy/config.json
+Restart=always
+RestartSec=3
+# Служба не ставит системный прокси и не трогает gsettings.
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,9 @@
+// ────────────── Startup Applications ──────────────
+// https://github.com/YaLTeR/niri/wiki/Configuration:-Miscellaneous#spawn-sh-at-startup
+
+    spawn-at-startup "noctalia"
+    // Эквалайзер (движок плагина vlad-dev/equalizer): без окна, пресет и bypass восстанавливает сам
+    spawn-at-startup "easyeffects" "--hide-window"
+    spawn-sh-at-startup "/home/vlad/.local/bin/wallpaper-anim.sh /home/vlad/Изображения/Wallpapers/Samurai-Autumn-1080p60.mp4"
+    // Waydroid (Android container) session — нужна для ArchiveTune и других Android-приложений
+    spawn-sh-at-startup "setsid /home/vlad/.local/bin/waydroid-session >/dev/null 2>&1 &"

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Quadra Roblox Link Handler (ESP build)
+Exec=/home/vlad/projects/quadra-esp/run.sh %u
+Icon=quadrahq
+Terminal=false
+NoDisplay=true
+MimeType=x-scheme-handler/roblox;x-scheme-handler/roblox-player;

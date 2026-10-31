@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Ensure the Waydroid session is running (idempotent).
+# Started from niri autostart; safe to call again by hand.
+if waydroid status 2>/dev/null | grep -qE '^Session:[[:space:]]*RUNNING'; then
+    echo "Waydroid session already running"
+    exit 0
+fi
+exec waydroid session start

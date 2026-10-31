@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=OpenCode
+Exec=env HTTP_PROXY=http://127.0.0.1:11085 HTTPS_PROXY=http://127.0.0.1:11085 NO_PROXY=127.0.0.1,localhost,::1 opencode-desktop %U
+Terminal=false
+Type=Application
+Icon=ai.opencode
+StartupWMClass=ai.opencode.desktop
+NoDisplay=true
+Comment=Open source AI coding agent
+Categories=Development;

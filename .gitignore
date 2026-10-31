@@ -1,0 +1,27 @@
+# Runtime artifacts
+*.lock
+*.log
+.cache/
+
+# OS generated
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+*.swo
+*~
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Backups in config
+*.bak
+
+# Secrets (if any ever get added)
+*.key
+*.pem
+*.env
+identity

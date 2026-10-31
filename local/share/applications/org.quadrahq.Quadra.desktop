@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Quadra ESP
+Comment=Run the macOS Roblox client on Linux through Darling, with the local ESP overlay build
+Comment[ru]=Запуск клиента Roblox для macOS на Linux через Darling, с локальной сборкой ESP
+GenericName=Roblox launcher
+GenericName[ru]=Лаунчер Roblox
+Exec=/home/vlad/projects/quadra-esp/run.sh
+Icon=quadrahq
+Terminal=false
+Categories=Game;
+Keywords=roblox;darling;esp;
+StartupNotify=true

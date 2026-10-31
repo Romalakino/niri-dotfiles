@@ -1,0 +1,21 @@
+#!/bin/bash
+# Перезапустить OpenCode так, чтобы его трафик шёл через локальный прокси 11085.
+#
+# Зачем перезапускать всё: `opencode-cli serve` держит окружение, полученное при
+# запуске, и переиспользуется новыми окнами приложения. Поэтому завершаются и
+# окно, и сервер, а затем приложение стартует уже с HTTP(S)_PROXY.
+set -u
+
+PROXY="http://127.0.0.1:11085"
+export HTTP_PROXY="$PROXY"
+export HTTPS_PROXY="$PROXY"
+export NO_PROXY="127.0.0.1,localhost,::1"
+
+pkill -f '/usr/lib/opencode-desktop' 2>/dev/null
+pkill -f 'opencode-cli serve' 2>/dev/null
+for _ in $(seq 20); do
+    pgrep -f 'opencode-cli serve' >/dev/null || break
+    sleep 0.25
+done
+
+exec opencode-desktop

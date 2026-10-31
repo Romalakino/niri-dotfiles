@@ -1,0 +1,5 @@
+[shell]
+polkit_agent = true
+
+[wallpaper]
+enabled = true
